@@ -22,6 +22,7 @@ import { formatINR } from '@/lib/utils'
 import { useExpenseContext } from '@/contexts/ExpenseContext'
 import { useBitcoinData } from '@/hooks/useBitcoinData'
 import { ArrowUpRight, ArrowDownRight, Bitcoin } from 'lucide-react'
+import { AddTransactionButton } from './AddTransactionButton'
 import {
   Bar,
   BarChart,
@@ -49,8 +50,51 @@ const categoryColors = [
 ]
 
 export default function DashboardView() {
-  const { summary, monthlyTrend, categoryBreakdown, recentTransactions, insights } = useExpenseContext()
+  const { summary, monthlyTrend, categoryBreakdown, recentTransactions, insights, loading, error } = useExpenseContext()
   const { holdings, history, riskSignals } = useBitcoinData()
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="h-6 w-48 bg-muted animate-pulse rounded mx-auto mb-2"></div>
+              <div className="h-4 w-32 bg-muted animate-pulse rounded mx-auto"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <Card>
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <p className="text-destructive mb-2">Failed to load data</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const latest = monthlyTrend[monthlyTrend.length - 1]
   const previous = monthlyTrend[monthlyTrend.length - 2]
@@ -59,6 +103,16 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-8">
+      {/* Dashboard Header with Add Transaction Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of your financial activities
+          </p>
+        </div>
+        <AddTransactionButton />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">

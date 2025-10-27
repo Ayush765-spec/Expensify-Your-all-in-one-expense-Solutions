@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/javascript@5"></script>
+</head>
+<body>
+    <div id="content">
+        <h1>Frontend Authentication Test</h1>
+        <div id="auth-status">Checking authentication...</div>
+        <div id="test-results"></div>
+        <button id="test-api" disabled>Test API Calls</button>
+    </div>
+
+    <script>
+        // Initialize Clerk
+        const clerkPublishableKey = 'pk_test_cmVhbC1iYXNpbGlzay01Mi5jbGVyay5hY2NvdW50cy5kZXYk';
+        const clerk = window.Clerk;
+        
+        async function initAuth() {
+            try {
+                await clerk.load({
+                    publishableKey: clerkPublishableKey
+                });
+                
+                const authStatus = document.getElementById('auth-status');
+                const testButton = document.getElementById('test-api');
+                
+                if (clerk.user) {
+                    authStatus.innerHTML = `✅ Signed in as: ${clerk.user.emailAddresses[0]?.emailAddress || 'Unknown'}`;
+                    testButton.disabled = false;
+                } else {
+                    authStatus.innerHTML = '❌ Not signed in - <a href="http://localhost:3000/sign-in">Sign In</a>';
+                }
+            } catch (error) {
+                document.getElementById('auth-status').innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testApiCalls() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h2>Testing API Calls...</h2>';
+            
+            const endpoints = [
+                '/api/transactions',
+                '/api/accounts', 
+                '/api/categories'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`http://localhost:3000${endpoint}`, {
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    const status = response.ok ? '✅' : '❌';
+                    resultsDiv.innerHTML += `<p>${status} ${endpoint}: ${response.status} - ${data.error || 'Success'}</p>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p>❌ ${endpoint}: Error - ${error.message}</p>`;
+                }
+            }
+        }
+        
+        document.getElementById('test-api').addEventListener('click', testApiCalls);
+        
+        // Initialize when page loads
+        window.addEventListener('load', initAuth);
+    </script>
+</body>
+</html>

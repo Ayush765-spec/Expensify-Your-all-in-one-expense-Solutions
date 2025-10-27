@@ -79,7 +79,7 @@ const blankForm: FormState = {
 }
 
 export default function TransactionsView() {
-  const { transactions, addTransaction, updateTransaction, deleteTransaction } = useExpenseContext()
+  const { transactions, addTransaction, updateTransaction, deleteTransaction, loading, error } = useExpenseContext()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -171,6 +171,49 @@ export default function TransactionsView() {
       setDeleteTarget(null)
     }
   }, [deleteTarget, deleteTransaction])
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="h-6 w-48 bg-muted animate-pulse rounded mx-auto mb-2"></div>
+              <div className="h-4 w-32 bg-muted animate-pulse rounded mx-auto"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <Card>
+          <CardContent className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <p className="text-destructive mb-2">Failed to load transactions</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

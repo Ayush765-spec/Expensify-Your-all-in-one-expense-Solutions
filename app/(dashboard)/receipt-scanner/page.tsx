@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Upload, ReceiptText, FileImage, AlertCircle, Loader2, RefreshCw, Plus, Check } from 'lucide-react'
+import { Upload, ReceiptText, FileImage, AlertCircle, Loader2, RefreshCw, Plus, Check, Brain, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useExpenseContext } from '@/contexts/ExpenseContext'
 
@@ -33,6 +33,8 @@ interface ReceiptData {
   payment_method: string
   receipt_number: string
   category: string
+  aiService?: 'gemini' | 'openai'
+  aiServiceDisplayName?: string
 }
 
 export default function ReceiptScanner() {
@@ -46,15 +48,15 @@ export default function ReceiptScanner() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<string>('')
   const [transactionStatus, setTransactionStatus] = useState<'Cleared' | 'Pending'>('Cleared')
+  const [aiServiceUsed, setAiServiceUsed] = useState<'gemini' | 'openai' | null>(null)
 
   const { addTransaction } = useExpenseContext()
 
-  // Available account options
+  // Available account options (matching database accounts)
   const accountOptions = [
-    'HDFC Bank Savings',
-    'Axis Atlas Credit',
-    'ICICI Coral Credit',
-    'UPI',
+    'Primary Savings',
+    'Credit Card',
+    'Checking Account',
     'Cash',
     'Other'
   ]
@@ -74,6 +76,7 @@ export default function ReceiptScanner() {
       setResult(null)
       setError(null)
       setRawResponse(null)
+      setAiServiceUsed(null)
       const objectUrl = URL.createObjectURL(selectedFile)
       setPreview(objectUrl)
     }
@@ -123,7 +126,14 @@ export default function ReceiptScanner() {
       } else {
         console.log('Receipt scanned successfully:', data)
         setResult(data)
-        toast.success('Receipt scanned successfully')
+        // Extract AI service info from response if available
+        if (data.aiService) {
+          setAiServiceUsed(data.aiService)
+        }
+        const successMessage = data.aiService === 'openai' 
+          ? 'Receipt scanned successfully using OpenAI GPT-4 Vision'
+          : 'Receipt scanned successfully'
+        toast.success(successMessage)
       }
     } catch (err) {
       console.error('Client error:', err)
@@ -164,39 +174,6 @@ export default function ReceiptScanner() {
     setAddingToExpenses(true)
 
     try {
-      console.log('Adding transaction to expenses:', {
-        date: result.date,
-        account: selectedAccount,
-        category: result.category,
-        amount: result.total_amount,
-        status: transactionStatus,
-        notes: `Receipt from ${result.merchant_name}${result.receipt_number ? ` (${result.receipt_number})` : ''}`
-      })
-
-      // Call the API endpoint
-      const response = await fetch('/api/add-transaction', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date: result.date,
-          account: selectedAccount,
-          category: result.category,
-          type: 'Expense',
-          amount: result.total_amount,
-          status: transactionStatus,
-          notes: `Receipt from ${result.merchant_name}${result.receipt_number ? ` (${result.receipt_number})` : ''}`,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add transaction')
-      }
-
-      // Add to local state using the hook
       const newTransaction = {
         date: result.date,
         account: selectedAccount,
@@ -204,13 +181,13 @@ export default function ReceiptScanner() {
         type: 'Expense' as const,
         amount: result.total_amount,
         status: transactionStatus,
-        notes: `Receipt from ${result.merchant_name}${result.receipt_number ? ` (${result.receipt_number})` : ''}`,
+        description: `Receipt from ${result.merchant_name}${result.receipt_number ? ` (${result.receipt_number})` : ''}`,
       }
       
-      console.log('Adding transaction to local state:', newTransaction)
-      addTransaction(newTransaction)
+      console.log('Adding transaction via hook:', newTransaction)
+      await addTransaction(newTransaction)
 
-      console.log('Transaction added successfully:', data.transaction)
+      console.log('Transaction added successfully via hook')
       toast.success('Expense added to your transactions!')
       setShowAddDialog(false)
       setSelectedAccount('')
@@ -309,9 +286,21 @@ export default function ReceiptScanner() {
         {/* Results Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileImage className="h-5 w-5" />
-              Extracted Data
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileImage className="h-5 w-5" />
+                Extracted Data
+              </div>
+              {result && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  {result.aiService === 'openai' ? (
+                    <Brain className="h-3 w-3" />
+                  ) : (
+                    <Zap className="h-3 w-3" />
+                  )}
+                  {result.aiServiceDisplayName || 'AI Analysis'}
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
               AI-extracted information from your receipt

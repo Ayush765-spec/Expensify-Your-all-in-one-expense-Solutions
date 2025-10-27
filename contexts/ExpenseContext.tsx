@@ -1,14 +1,14 @@
 'use client'
 
 import { createContext, useContext, ReactNode } from 'react'
-import { useExpenseData } from '@/hooks/useExpenseData'
+import { useExpenseDataMock } from '@/hooks/useExpenseDataMock'
 
 // Create the context
-const ExpenseContext = createContext<ReturnType<typeof useExpenseData> | null>(null)
+const ExpenseContext = createContext<ReturnType<typeof useExpenseDataMock> | null>(null)
 
 // Provider component
 export function ExpenseProvider({ children }: { children: ReactNode }) {
-  const expenseData = useExpenseData()
+  const expenseData = useExpenseDataMock()
   
   return (
     <ExpenseContext.Provider value={expenseData}>

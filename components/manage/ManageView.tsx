@@ -12,7 +12,7 @@ import { UserProfile } from '@clerk/nextjs'
 import { useTheme } from 'next-themes'
 import { useExpenseData } from '@/hooks/useExpenseData'
 import { formatINR } from '@/lib/utils'
-import { Download, Bell, Shield, Settings } from 'lucide-react'
+import { Download, Bell, Shield, Settings, Database } from 'lucide-react'
 
 const notificationOptions = [
   { key: 'emailAlerts', label: 'Email alerts for large spends' },
@@ -33,9 +33,23 @@ export default function ManageView() {
     weeklyDigest: true,
   })
   const [defaultAccount, setDefaultAccount] = useState('hdfc')
+  const [isSeeding, setIsSeeding] = useState(false)
 
   function toggleNotification(key: NotificationKey) {
     setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  async function handleSeed() {
+    setIsSeeding(true)
+    try {
+      const response = await fetch('/api/seed-for-current-user', { method: 'POST' })
+      if (!response.ok) {
+        console.error('Failed to seed data')
+      }
+      // Optionally, you can add a toast notification here to inform the user
+    } finally {
+      setIsSeeding(false)
+    }
   }
 
   return (
@@ -99,6 +113,24 @@ export default function ManageView() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
+            <Database className="h-5 w-5 text-primary" />
+            Developer Actions
+          </CardTitle>
+          <CardDescription>Actions for development and testing.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleSeed} disabled={isSeeding}>
+            {isSeeding ? 'Seeding...' : 'Seed Data for Current User'}
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            This will add sample accounts, categories, and transactions for your user.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Bell className="h-5 w-5 text-primary" />
             Notification Centre
           </CardTitle>
@@ -142,7 +174,7 @@ export default function ManageView() {
         <UserProfile
           routing="hash"
           appearance={{
-            baseTheme: resolvedTheme === 'dark' ? 'dark' : 'light',
+            baseTheme: (resolvedTheme === 'dark' ? 'dark' : 'light') as any,
             variables: {
               colorPrimary: '#d4af37',
               colorText: resolvedTheme === 'dark' ? '#f4e6bf' : '#1c1408',
