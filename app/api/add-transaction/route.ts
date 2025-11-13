@@ -146,9 +146,15 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Add transaction error:', error)
-    return NextResponse.json({ 
-      error: `Internal server error: ${error.message}` 
-    }, { status: 500 })
+    console.error('❌ Add transaction error:', error);
+
+    let errorMessage = 'An unknown error occurred';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    return NextResponse.json({
+      error: `Internal server error: ${errorMessage}`
+    }, { status: 500 });
   }
 }
